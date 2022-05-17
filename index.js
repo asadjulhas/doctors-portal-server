@@ -17,6 +17,21 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@doctors-services.1laqf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyUser(req, res, next) {
+  const authorization = req.headers.authorization;
+  if(!authorization) {
+    return res.status(401).send({Message: 'unauthorized access'})
+  }
+ const token = authorization.split(' ')[1]
+ jwt.verify(token, process.env.JWT, (err, decoded) => {
+   if(err) {
+    return res.status(403).send({Message: 'Forbidden access'})
+   }
+   req.decoded = decoded
+   next()
+ })
+}
+
 async function run() {
   try {
     await client.connect();
@@ -62,11 +77,16 @@ async function run() {
     }) 
 
     // My Appointments
-    app.get('/my-appointment', async (req, res) => {
+    app.get('/my-appointment', verifyUser, async (req, res) => {
       const email = req.query.email;
+      const tokenEmail = req.decoded.email;
+      if(tokenEmail === email) {
       const query = {email: email}
       const appointment = await bookingCollections.find(query).toArray();
       res.send(appointment)
+    } else {
+      return res.status(403).send({Message: 'Forbidden'})
+    }
     }) 
 
     // Add/update user
@@ -84,6 +104,39 @@ async function run() {
      });
       res.send({accessToken})
 
+    })
+
+    // Make Admin 
+       app.put('/admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const authorization = req.headers.authorization;
+        console.log(authorization)
+        const query = {email: email};
+        const updateDoc = {
+          $set: {role: 'admin'}
+        };
+        const result = userCollections.updateOne(query, updateDoc);
+        res.send({result})
+  
+      })
+
+    // Remove Admin 
+       app.put('/remove-admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const query = {email: email};
+        const updateDoc = {
+          $set: {role: 'user'}
+        };
+        const result = userCollections.updateOne(query, updateDoc);
+        res.send({result})
+  
+      })
+
+    // Get all user
+    app.get('/all-users', verifyUser, async (req, res) => {
+      const query = {};
+      const allUsers = await userCollections.find(query).toArray();
+      res.send(allUsers);
     })
 
   }
