@@ -71,7 +71,6 @@ async function run() {
         const booked = serviceBooking.map(b => b.slot);
         const available = service.slots.filter(s => !booked.includes(s));
         service.available = available;
-        console.log(available)
       })
       res.send(services)
     }) 
@@ -107,30 +106,49 @@ async function run() {
     })
 
     // Make Admin 
-       app.put('/admin/:email', async (req, res) => {
+       app.put('/admin/:email', verifyUser, async (req, res) => {
         const email = req.params.email;
-        const authorization = req.headers.authorization;
-        console.log(authorization)
-        const query = {email: email};
+        const tokenEmail = req.decoded.email;
+        const tokenQuery = {email: tokenEmail, role: 'admin'}
+        const checkAdmin = await userCollections.findOne(tokenQuery);
+        if(checkAdmin) {
+          const query = {email: email};
         const updateDoc = {
           $set: {role: 'admin'}
         };
-        const result = userCollections.updateOne(query, updateDoc);
+        const result = await userCollections.updateOne(query, updateDoc);
         res.send({result})
+        } else {
+          res.send({message: 'You dont have admin access'})
+        }
   
       })
 
     // Remove Admin 
-       app.put('/remove-admin/:email', async (req, res) => {
+       app.put('/remove-admin/:email', verifyUser, async (req, res) => {
         const email = req.params.email;
+        const tokenEmail = req.decoded.email;
+        const tokenQuery = {email: tokenEmail, role: 'admin'}
+        const checkAdmin = await userCollections.findOne(tokenQuery);
+        if(checkAdmin) {
         const query = {email: email};
         const updateDoc = {
           $set: {role: 'user'}
         };
-        const result = userCollections.updateOne(query, updateDoc);
+        const result = await userCollections.updateOne(query, updateDoc);
         res.send({result})
-  
+      } else {
+        res.send({message: 'You dont have admin access'})
+      }
       })
+
+      app.get('/check-admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const Query = {email: email, role: 'admin'}
+        const checkAdmin = await userCollections.findOne(Query);
+        res.send(checkAdmin)
+      })
+
 
     // Get all user
     app.get('/all-users', verifyUser, async (req, res) => {
