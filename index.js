@@ -47,6 +47,14 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services)
     })
+    
+    // Get all services specialty
+    app.get('/specialty', async (req, res) => {
+      const query = {};
+      const cursor = servicesCollections.find(query).project({name: 1})
+      const services = await cursor.toArray();
+      res.send(services)
+    })
 
     // Store booking
     app.post('/booking', async (req, res) => {
