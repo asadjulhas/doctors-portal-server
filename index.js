@@ -133,7 +133,7 @@ async function run() {
         if(checkAdmin) {
         const query = {email: email};
         const updateDoc = {
-          $set: {role: 'user'}
+          $set: {role: ''}
         };
         const result = await userCollections.updateOne(query, updateDoc);
         res.send({result})
@@ -142,7 +142,7 @@ async function run() {
       }
       })
 
-      app.get('/check-admin/:email', async (req, res) => {
+      app.get('/check-admin/:email', verifyUser, async (req, res) => {
         const email = req.params.email;
         const Query = {email: email, role: 'admin'}
         const checkAdmin = await userCollections.findOne(Query);
