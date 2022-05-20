@@ -2,6 +2,10 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 var jwt = require('jsonwebtoken');
+
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport');
+
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -30,6 +34,44 @@ function verifyUser(req, res, next) {
    req.decoded = decoded
    next()
  })
+}
+
+const emailSenderOptions = {
+  auth: {
+    api_key: process.env.SENDGRID_API_KEY
+  }
+}
+const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+
+
+
+function sendAppointmentEmail (booking) {
+  const {email, serviceName, userName, date, slot} = booking;
+
+  const sendEmail = {
+    from: process.env.EMAIL_SENDER,
+    to: email,
+    subject: `Your Appointment for ${serviceName} is on ${date} at ${slot} is Confirmed!`,
+    text: `Your Appointment for ${serviceName} is on ${date} at ${slot} is Confirmed!`,
+    html: `
+    <div>
+    <p>Hello ${userName}</p>
+    <p>Your Appointment for ${serviceName} is Confirmed!</p>
+    <p>Looking forward to deeing you on ${date} at ${slot} </p>
+    <a href="www.asadjulhas.com?un=${email}">UnSubscribe</a>
+    </div>
+    `
+  };
+
+  emailClient.sendMail(sendEmail, function(err, info){
+    if (err ){
+      console.log(err);
+    }
+    else {
+      // console.log('Message sent: ', info);
+    }
+});
+
 }
 
 async function run() {
@@ -78,6 +120,7 @@ async function run() {
         return res.send(isExits)
       }
       const result = await bookingCollections.insertOne(booking);
+      sendAppointmentEmail(booking)
       res.send(result)
     })
 
