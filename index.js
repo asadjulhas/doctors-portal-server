@@ -229,6 +229,22 @@ async function run() {
       const result = await doctorCollections.deleteOne(query);
       res.send(result)
     })
+    
+    // Delete Booking
+    app.delete('/del-booking/:id', verifyUser, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)}
+      const result = await bookingCollections.deleteOne(query);
+      res.send(result)
+    })
+    
+    // Delete Booking
+    app.get('/booking/:id', verifyUser, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)}
+      const result = await bookingCollections.findOne(query);
+      res.send(result)
+    })
 
   }
   finally {
