@@ -39,6 +39,19 @@ async function run() {
     const servicesCollections = client.db('doctorsPortal').collection('services')
     const bookingCollections = client.db('doctorsPortal').collection('booking')
     const userCollections = client.db('doctorsPortal').collection('users')
+    const doctorCollections = client.db('doctorsPortal').collection('doctors')
+
+    // Verify admin
+    const verifyAdmin = async (req, res, next) => {
+      const tokenEmail = req.decoded.email;
+        const tokenQuery = {email: tokenEmail, role: 'admin'}
+        const checkAdmin = await userCollections.findOne(tokenQuery);
+        if(checkAdmin) { 
+          next();
+        } else {
+          res.send({message: 'You dont have admin access bro'})
+        }
+    }
     
     // Get all services
     app.get('/service', async (req, res) => {
@@ -114,40 +127,27 @@ async function run() {
     })
 
     // Make Admin 
-       app.put('/admin/:email', verifyUser, async (req, res) => {
+       app.put('/admin/:email', verifyUser, verifyAdmin, async (req, res) => {
         const email = req.params.email;
-        const tokenEmail = req.decoded.email;
-        const tokenQuery = {email: tokenEmail, role: 'admin'}
-        const checkAdmin = await userCollections.findOne(tokenQuery);
-        if(checkAdmin) {
           const query = {email: email};
         const updateDoc = {
           $set: {role: 'admin'}
         };
         const result = await userCollections.updateOne(query, updateDoc);
         res.send({result})
-        } else {
-          res.send({message: 'You dont have admin access'})
-        }
+        
   
       })
 
     // Remove Admin 
-       app.put('/remove-admin/:email', verifyUser, async (req, res) => {
+       app.put('/remove-admin/:email', verifyUser, verifyAdmin, async (req, res) => {
         const email = req.params.email;
-        const tokenEmail = req.decoded.email;
-        const tokenQuery = {email: tokenEmail, role: 'admin'}
-        const checkAdmin = await userCollections.findOne(tokenQuery);
-        if(checkAdmin) {
         const query = {email: email};
         const updateDoc = {
           $set: {role: ''}
         };
         const result = await userCollections.updateOne(query, updateDoc);
         res.send({result})
-      } else {
-        res.send({message: 'You dont have admin access'})
-      }
       })
 
       app.get('/check-admin/:email', verifyUser, async (req, res) => {
@@ -163,6 +163,14 @@ async function run() {
       const query = {};
       const allUsers = await userCollections.find(query).toArray();
       res.send(allUsers);
+    })
+
+    // Add doctor
+    app.post('/doctor', verifyUser, verifyAdmin, async (req, res) => {
+      const doctor = req.body;
+       const result = await doctorCollections.insertOne(doctor);
+       res.send(result)
+       
     })
 
   }
