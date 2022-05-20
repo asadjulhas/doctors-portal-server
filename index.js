@@ -5,7 +5,7 @@ var jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 
@@ -159,7 +159,7 @@ async function run() {
 
 
     // Get all user
-    app.get('/all-users', verifyUser, async (req, res) => {
+    app.get('/all-users', verifyUser, verifyAdmin, async (req, res) => {
       const query = {};
       const allUsers = await userCollections.find(query).toArray();
       res.send(allUsers);
@@ -170,7 +170,21 @@ async function run() {
       const doctor = req.body;
        const result = await doctorCollections.insertOne(doctor);
        res.send(result)
-       
+    })
+
+    
+    // Get all doctor
+    app.get('/doctor', verifyUser, verifyAdmin, async (req, res) => {
+      const allDoctor = await doctorCollections.find().toArray();
+      res.send(allDoctor);
+    })
+    
+    // Delete doctor
+    app.delete('/delete/:id', verifyUser, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)}
+      const result = await doctorCollections.deleteOne(query);
+      res.send(result)
     })
 
   }
