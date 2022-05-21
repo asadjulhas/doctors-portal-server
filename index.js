@@ -10,7 +10,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRATE_KEY);
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5000;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
