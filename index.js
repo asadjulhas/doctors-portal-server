@@ -10,7 +10,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRATE_KEY);
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 4000;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -269,13 +269,28 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
       res.send(result)
     })
     
-    // Delete Booking
+    // Find Booking
     app.get('/booking/:id', verifyUser, async (req, res) => {
       const id = req.params.id;
       const query = {_id: ObjectId(id)}
       const result = await bookingCollections.findOne(query);
       res.send(result)
     })
+
+// Remove Admin 
+app.put('/payment/:id', verifyUser, async (req, res) => {
+  const id = req.params.id;
+  const paymentIntent = req.body;
+  const query = {_id: ObjectId(id)};
+  const updateDoc = {
+    $set: {payment: true, transactionId: paymentIntent.transactionId}
+  };
+  const result = await bookingCollections.updateOne(query, updateDoc);
+  res.send({result})
+
+
+})
+
 
   }
   finally {
