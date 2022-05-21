@@ -2,11 +2,14 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 var jwt = require('jsonwebtoken');
+require('dotenv').config();
 
+// For Payment
+const stripe = require("stripe")(process.env.STRIPE_SECRATE_KEY);
+// Email
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
-require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -94,6 +97,34 @@ async function run() {
           res.send({message: 'You dont have admin access bro'})
         }
     }
+
+
+// Payment function
+
+
+app.post("/create-payment-intent", verifyUser, async (req, res) => {
+  const service  = req.body;
+  const price = service.amount;
+  const amount = price * 100;
+ console.log(amount)
+ 
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount,
+    currency: "usd",
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+
+
+})
+
+
+
     
     // Get all services
     app.get('/service', async (req, res) => {
