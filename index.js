@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json())
 
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@doctors-services.1laqf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vbgxx.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 function verifyUser(req, res, next) {
@@ -80,12 +80,9 @@ function sendAppointmentEmail (booking) {
 async function run() {
   try {
     await client.connect();
-
-    const servicesCollections = client.db('doctorsPortal').collection('services')
-    const bookingCollections = client.db('doctorsPortal').collection('booking')
-    const userCollections = client.db('doctorsPortal').collection('users')
-    const doctorCollections = client.db('doctorsPortal').collection('doctors')
-    const paymentCollections = client.db('doctorsPortal').collection('payments')
+    
+    const userCollections = client.db('asad-julhas').collection('users')
+    const introCollections = client.db('asad-julhas').collection('intro')
 
     // Verify admin
     const verifyAdmin = async (req, res, next) => {
@@ -103,86 +100,27 @@ async function run() {
 // Payment function
 
 
-app.post("/create-payment-intent", verifyUser, async (req, res) => {
-  const service  = req.body;
-  const price = service.amount;
-  const amount = price * 100;
- console.log(amount)
+// app.post("/create-payment-intent", verifyUser, async (req, res) => {
+//   const service  = req.body;
+//   const price = service.amount;
+//   const amount = price * 100;
+//  console.log(amount)
  
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amount,
-    currency: "usd",
-    automatic_payment_methods: {
-      enabled: true,
-    },
-  });
+//   const paymentIntent = await stripe.paymentIntents.create({
+//     amount: amount,
+//     currency: "usd",
+//     automatic_payment_methods: {
+//       enabled: true,
+//     },
+//   });
 
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
-
-
-})
+//   res.send({
+//     clientSecret: paymentIntent.client_secret,
+//   });
 
 
+// })
 
-    
-    // Get all services
-    app.get('/service', async (req, res) => {
-      const query = {};
-      const cursor = servicesCollections.find(query)
-      const services = await cursor.toArray();
-      res.send(services)
-    })
-    
-    // Get all services specialty
-    app.get('/specialty', async (req, res) => {
-      const query = {};
-      const cursor = servicesCollections.find(query).project({name: 1})
-      const services = await cursor.toArray();
-      res.send(services)
-    })
-
-    // Store booking
-    app.post('/booking', async (req, res) => {
-      const booking = req.body;
-      const query = {serviceName: booking.serviceName, date: booking.date, email: booking.email}
-      const isExits = await bookingCollections.findOne(query);
-      if(isExits) {
-        return res.send(isExits)
-      }
-      const result = await bookingCollections.insertOne(booking);
-      sendAppointmentEmail(booking)
-      res.send(result)
-    })
-
-    // Available services
-    app.get('/available', async (req, res) => {
-      const date = req.query.date;
-      const query = {date: date}
-      const services = await servicesCollections.find().toArray()
-      const booking = await bookingCollections.find(query).toArray();
-      services.forEach(service => {
-        const serviceBooking = booking.filter(s => s.serviceName === service.name);
-        const booked = serviceBooking.map(b => b.slot);
-        const available = service.slots.filter(s => !booked.includes(s));
-        service.available = available;
-      })
-      res.send(services)
-    }) 
-
-    // My Appointments
-    app.get('/my-appointment', verifyUser, async (req, res) => {
-      const email = req.query.email;
-      const tokenEmail = req.decoded.email;
-      if(tokenEmail === email) {
-      const query = {email: email}
-      const appointment = await bookingCollections.find(query).toArray();
-      res.send(appointment)
-    } else {
-      return res.status(403).send({Message: 'Forbidden'})
-    }
-    }) 
 
     // Add/update user
     app.put('/user/:email', async (req, res) => {
@@ -202,28 +140,28 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
     })
 
     // Make Admin 
-       app.put('/admin/:email', verifyUser, verifyAdmin, async (req, res) => {
-        const email = req.params.email;
-          const query = {email: email};
-        const updateDoc = {
-          $set: {role: 'admin'}
-        };
-        const result = await userCollections.updateOne(query, updateDoc);
-        res.send({result})
+    //    app.put('/admin/:email', verifyUser, verifyAdmin, async (req, res) => {
+    //     const email = req.params.email;
+    //       const query = {email: email};
+    //     const updateDoc = {
+    //       $set: {role: 'admin'}
+    //     };
+    //     const result = await userCollections.updateOne(query, updateDoc);
+    //     res.send({result})
         
   
-      })
+    //   })
 
-    // Remove Admin 
-       app.put('/remove-admin/:email', verifyUser, verifyAdmin, async (req, res) => {
-        const email = req.params.email;
-        const query = {email: email};
-        const updateDoc = {
-          $set: {role: ''}
-        };
-        const result = await userCollections.updateOne(query, updateDoc);
-        res.send({result})
-      })
+    // // Remove Admin 
+    //    app.put('/remove-admin/:email', verifyUser, verifyAdmin, async (req, res) => {
+    //     const email = req.params.email;
+    //     const query = {email: email};
+    //     const updateDoc = {
+    //       $set: {role: ''}
+    //     };
+    //     const result = await userCollections.updateOne(query, updateDoc);
+    //     res.send({result})
+    //   })
 
       app.get('/check-admin/:email', verifyUser, async (req, res) => {
         const email = req.params.email;
@@ -233,10 +171,10 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
       })
 
 
-    // Get all user
-    app.get('/all-users', verifyUser, verifyAdmin, async (req, res) => {
+    // Get Banner short intro
+    app.get('/intro', verifyUser, verifyAdmin, async (req, res) => {
       const query = {};
-      const allUsers = await userCollections.find(query).toArray();
+      const allUsers = await introCollections.find(query).toArray();
       res.send(allUsers);
     })
 
@@ -248,12 +186,6 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
     })
 
     
-    // Get all doctor
-    app.get('/doctor', verifyUser, verifyAdmin, async (req, res) => {
-      const allDoctor = await doctorCollections.find().toArray();
-      res.send(allDoctor);
-    })
-    
     // Delete doctor
     app.delete('/delete/:id', verifyUser, verifyAdmin, async (req, res) => {
       const id = req.params.id;
@@ -262,21 +194,6 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
       res.send(result)
     })
     
-    // Delete Booking
-    app.delete('/del-booking/:id', verifyUser, async (req, res) => {
-      const id = req.params.id;
-      const query = {_id: ObjectId(id)}
-      const result = await bookingCollections.deleteOne(query);
-      res.send(result)
-    })
-    
-    // Find Booking
-    app.get('/booking/:id', verifyUser, async (req, res) => {
-      const id = req.params.id;
-      const query = {_id: ObjectId(id)}
-      const result = await bookingCollections.findOne(query);
-      res.send(result)
-    })
 
 // Update payment status for booking
 app.put('/payment/:id', verifyUser, async (req, res) => {
@@ -306,5 +223,5 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log('Opening Doctor server on port', port)
+  console.log('Opening Asad-Julhas server on port', port)
 })
