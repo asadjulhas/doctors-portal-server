@@ -85,6 +85,7 @@ async function run() {
     const bookingCollections = client.db('doctorsPortal').collection('booking')
     const userCollections = client.db('doctorsPortal').collection('users')
     const doctorCollections = client.db('doctorsPortal').collection('doctors')
+    const paymentCollections = client.db('doctorsPortal').collection('payments')
 
     // Verify admin
     const verifyAdmin = async (req, res, next) => {
@@ -277,17 +278,17 @@ app.post("/create-payment-intent", verifyUser, async (req, res) => {
       res.send(result)
     })
 
-// Remove Admin 
+// Update payment status for booking
 app.put('/payment/:id', verifyUser, async (req, res) => {
   const id = req.params.id;
   const paymentIntent = req.body;
   const query = {_id: ObjectId(id)};
   const updateDoc = {
-    $set: {payment: true, transactionId: paymentIntent.transactionId}
+    $set: {payment: true, transactionId: paymentIntent.paymentIntent.id}
   };
   const result = await bookingCollections.updateOne(query, updateDoc);
+  const setPayment = await paymentCollections.insertOne(paymentIntent.paymentIntent);
   res.send({result})
-
 
 })
 
